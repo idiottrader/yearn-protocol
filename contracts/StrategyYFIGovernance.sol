@@ -188,7 +188,7 @@ contract StrategyYFIGovernance {
 
     /**
      *Controller only function for creating additional rewards from dust
-     *@dev 把某token(非YFI)在本合约的余额全部取回到controller控制器合约
+     *@dev 把某token(非YFI)在本合约的余额全部取回到控制器合约
      *param _asset 某token
      */
     function withdraw(IERC20 _asset) external returns (uint256 balance) {
@@ -221,7 +221,7 @@ contract StrategyYFIGovernance {
         }
         //计算取款收费
         uint256 _fee = _amount.mul(fee).div(max);
-        //将收到的费用发给奖励池，通过controller获取相应的地址
+        //将收到的费用发给奖励池，通过控制器合约获取相应的地址
         IERC20(want).safeTransfer(Controller(controller).rewards(), _fee);
         //从控制器合约获取vault地址
         address _vault = Controller(controller).vaults(address(want));
