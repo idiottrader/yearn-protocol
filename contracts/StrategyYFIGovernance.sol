@@ -87,6 +87,7 @@ interface Zap {
 
 
 /**
+ *本策略操作的资金是YFI
  *yearn vaults中的YFI vault:使用者存入YFI代币，获得yYFI代币，赎回yYFI代币时可获取原本投入的YFI代币加上策略赚取的YFI代币;
  *本合约是YFI vault的策略合约，合约收到YFI后，将YFI stake到ygov.finance,从而赚取收益;
  *收益来源：yearn v2 机枪池所收到的费用去了专门的国库合约（限额50万美元），超过限额将会自动到治理合约,stake YFI到治理合约能赚取这部分收益;
@@ -255,9 +256,8 @@ contract StrategyYFIGovernance {
 
     /**
      *@dev 收获方法
-     *将治理合约中奖励的usdt换成weth，再换成YFI，继续stake到治理合约中?????
-     *zap作用  curve作用？
-     *
+     *将治理合约中奖励的yCrv,先在curve的y池移除流动性换成usdt
+     *再在uniswap中把usdt换成weth，weth再换成YFI，YFI继续stake到治理合约中
      */
     function harvest() public {
         //确保是策略管理员或治理员或tx.origin调用
@@ -267,15 +267,18 @@ contract StrategyYFIGovernance {
                 msg.sender == tx.origin,
             "!authorized"
         );
-        //执行收获操作 从治理合约收获stake产生的奖励
+        //执行收获操作 从治理合约收获stake产生的奖励,奖励为yCrv
         Governance(gov).getReward();
-        //收获usdt??
+        //获取合约中yCrv的余额
         uint256 _balance = IERC20(reward).balanceOf(address(this));
         if (_balance > 0) {
+            //授权curve的y池
             IERC20(reward).safeApprove(zap, 0);
             IERC20(reward).safeApprove(zap, _balance);
+            //在curve的y池中移除流动性，把yCrv换成usdt
             Zap(zap).remove_liquidity_one_coin(_balance, 2, 0);
         }
+        //获取合约中usdt的余额
         _balance = IERC20(usdt).balanceOf(address(this));
         if (_balance > 0) {
             //授权uniswap
