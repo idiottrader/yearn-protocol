@@ -88,11 +88,11 @@ interface Zap {
 
 /**
  *本策略合约操作的资金是YFI；
- *用户角度：在Yearn Vaults中的YFI Vault，使用者存入YFI代币，获得yYFI代币，赎回yYFI代币时可获取原本投入的YFI代币加上策略赚取的YFI代币；
+ *用户角度：在YFI Vault，用户存入YFI代币，获得yYFI代币，赎回yYFI代币时可获取原本投入的YFI代币加上策略赚取的YFI代币；
  *Yearn V2角度：存入的YFI先到YFI Vault中，再到对应的控制器合约中，由控制器合约指定策略合约对defi项目进行投资；
- *本合约是YFI Vault的策略合约，策略合约收到YFI后，将YFI stake到yfi gov项目,从而赚取收益;
+ *本合约是YFI Vault对应的策略合约，策略合约收到YFI后，将YFI stake到yfi gov项目,从而赚取收益;
  *收益来源：yearn v2 机枪池所收到的费用去了专门的国库合约（限额50万美元），超过限额将会自动到治理合约,stake YFI到yfi gov能赚取这部分收益；
- *YFI策略合约 地址:0x395F93350D5102B6139Abfc84a7D6ee70488797C 有小部分更新 暂时没拉下来;
+ *YFI策略合约 地址:0x395F93350D5102B6139Abfc84a7D6ee70488797C
  */
 contract StrategyYFIGovernance {
     using SafeERC20 for IERC20;
@@ -131,7 +131,7 @@ contract StrategyYFIGovernance {
     //weth 地址
     address public constant weth = address(
         0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
-    ); // used for crv <> weth <> dai route
+    ); 
 
     //5%的绩效费用
     uint256 public fee = 500;
@@ -189,7 +189,7 @@ contract StrategyYFIGovernance {
     /**
      *Controller only function for creating additional rewards from dust
      *@dev 把某token(非YFI)在本合约的余额全部取回到控制器合约
-     *param _asset 某token
+     *@param _asset 某token
      */
     function withdraw(IERC20 _asset) external returns (uint256 balance) {
         //确保是控制器合约调用
