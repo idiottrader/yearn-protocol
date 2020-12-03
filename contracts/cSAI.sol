@@ -856,7 +856,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     address payable public pendingAdmin;
 
     /**
-     * @notice Contract which oversees inter-cToken operations 合约的控制者
+     * @notice Contract which oversees inter-cToken operations 合约的风险控制者
      */
     ComptrollerInterface public comptroller;
 
@@ -1391,8 +1391,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-      * @notice Applies accrued interest to total borrows and reserves.
-      * @dev This calculates interest accrued from the last checkpointed block
+      * @notice Applies accrued interest to total borrows and reserves. 计算利息
+      * @dev This calculates interest accrued from the last checkpointed block 利息更新至最新区块
       *      up to the current block and writes new checkpoint to storage.
       */
     function accrueInterest() public returns (uint) {
@@ -1462,15 +1462,16 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Sender supplies assets into the market and receives cTokens in exchange
+     * @notice Sender supplies assets into the market and receives cTokens in exchange 存入底层资产并铸造出CToken
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param mintAmount The amount of the underlying asset to supply
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
     function mintInternal(uint mintAmount) internal nonReentrant returns (uint) {
-        uint error = accrueInterest();
+        uint error = accrueInterest(); //调用计算利息方法，返回利息计算结果
         if (error != uint(Error.NO_ERROR)) {
             // accrueInterest emits logs on errors, but we still want to log the fact that an attempted borrow failed
+            //利息计算有误，返回失败日志
             return fail(Error(error), FailureInfo.MINT_ACCRUE_INTEREST_FAILED);
         }
         // mintFresh emits the actual Mint event if successful and logs on errors, so we don't need to
@@ -1487,8 +1488,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice User supplies assets into the market and receives cTokens in exchange
-     * @dev Assumes interest has already been accrued up to the current block
+     * @notice User supplies assets into the market and receives cTokens in exchange 存入底层资产并铸造出CToken
+     * @dev Assumes interest has already been accrued up to the current block 
      * @param minter The address of the account which is supplying the assets
      * @param mintAmount The amount of the underlying asset to supply
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -1515,7 +1516,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
 
         /*
          * We get the current exchange rate and calculate the number of cTokens to be minted:
-         *  mintTokens = mintAmount / exchangeRate
+         *  mintTokens = mintAmount / exchangeRate CToken数量 = 存入底层资产数量 / 兑换比例
          */
         (vars.mathErr, vars.exchangeRateMantissa) = exchangeRateStoredInternal();
         if (vars.mathErr != MathError.NO_ERROR) {
@@ -1563,7 +1564,9 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         accountTokens[minter] = vars.accountTokensNew;
 
         /* We emit a Mint event, and a Transfer event */
+        //触发铸造CToken事件
         emit Mint(minter, mintAmount, vars.mintTokens);
+        //触发CToken转账事件
         emit Transfer(address(this), minter, vars.mintTokens);
 
         /* We call the defense hook */
@@ -1573,7 +1576,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Sender redeems cTokens in exchange for the underlying asset
+     * @notice Sender redeems cTokens in exchange for the underlying asset 输入要销毁的CToken数量，销毁CToken以赎回底层资产
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param redeemTokens The number of cTokens to redeem into underlying
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -1589,7 +1592,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Sender redeems cTokens in exchange for a specified amount of underlying asset
+     * @notice Sender redeems cTokens in exchange for a specified amount of underlying asset 输入要赎回的底层资产数量，销毁CToken以赎回底层资产
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param redeemAmount The amount of underlying to redeem
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -1615,11 +1618,11 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice User redeems cTokens in exchange for the underlying asset
-     * @dev Assumes interest has already been accrued up to the current block
+     * @notice User redeems cTokens in exchange for the underlying asset 销毁CToken以赎回底层资产
+     * @dev Assumes interest has already been accrued up to the current block 假设到当前区块为止已经产生了利息（应记利息）
      * @param redeemer The address of the account which is redeeming the tokens
-     * @param redeemTokensIn The number of cTokens to redeem into underlying (only one of redeemTokensIn or redeemAmountIn may be zero)
-     * @param redeemAmountIn The number of cTokens to redeem into underlying (only one of redeemTokensIn or redeemAmountIn may be zero)
+     * @param redeemTokensIn The number of cTokens to redeem into underlying (only one of redeemTokensIn or redeemAmountIn may be zero) 要赎回的CToken数量
+     * @param redeemAmountIn The number of cTokens to redeem into underlying (only one of redeemTokensIn or redeemAmountIn may be zero) 要赎回的底层资产数量
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
     function redeemFresh(address payable redeemer, uint redeemTokensIn, uint redeemAmountIn) internal returns (uint) {
@@ -1711,6 +1714,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         accountTokens[redeemer] = vars.accountTokensNew;
 
         /* We emit a Transfer event, and a Redeem event */
+        //触发赎回和转账事件
         emit Transfer(redeemer, address(this), vars.redeemTokens);
         emit Redeem(redeemer, vars.redeemAmount, vars.redeemTokens);
 
@@ -1721,7 +1725,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-      * @notice Sender borrows assets from the protocol to their own address
+      * @notice Sender borrows assets from the protocol to their own address 借贷底层资产
       * @param borrowAmount The amount of the underlying asset to borrow
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
@@ -1943,7 +1947,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice The sender liquidates the borrowers collateral.
+     * @notice The sender liquidates the borrowers collateral. 清算借贷者的抵押品
      *  The collateral seized is transferred to the liquidator.
      * @param borrower The borrower of this cToken to be liquidated
      * @param cTokenCollateral The market in which to seize collateral from the borrower
@@ -1952,6 +1956,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
      */
     function liquidateBorrowInternal(address borrower, uint repayAmount, CToken cTokenCollateral) internal nonReentrant returns (uint) {
         uint error = accrueInterest();
+        //确保当前区块完成应计利息的计算
         if (error != uint(Error.NO_ERROR)) {
             // accrueInterest emits logs on errors, but we still want to log the fact that an attempted liquidation failed
             return fail(Error(error), FailureInfo.LIQUIDATE_ACCRUE_BORROW_INTEREST_FAILED);
@@ -1968,7 +1973,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice The liquidator liquidates the borrowers collateral.
+     * @notice The liquidator liquidates the borrowers collateral. 清算借贷者的抵押品
      *  The collateral seized is transferred to the liquidator.
      * @param borrower The borrower of this cToken to be liquidated
      * @param liquidator The address repaying the borrow and seizing collateral
@@ -2039,7 +2044,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Transfers collateral tokens (this market) to the liquidator.
+     * @notice Transfers collateral tokens (this market) to the liquidator. 把要清算的抵押品转账给清算者
      * @dev Will fail unless called by another cToken during the process of liquidation.
      *  Its absolutely critical to use msg.sender as the borrowed cToken and not a parameter.
      * @param liquidator The account receiving seized collateral
@@ -2152,7 +2157,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-      * @notice Sets a new comptroller for the market
+      * @notice Sets a new comptroller for the market 设置新的风险管理者
       * @dev Admin function to set a new comptroller
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
