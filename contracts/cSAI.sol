@@ -816,82 +816,82 @@ pragma solidity ^0.5.8;
  */
 contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGuard {
     /**
-     * @notice Indicator that this is a CToken contract (for inspection)
+     * @notice Indicator that this is a CToken contract (for inspection) 声明这是一个CToken合约
      */
     bool public constant isCToken = true;
 
     /**
-     * @notice EIP-20 token name for this token
+     * @notice EIP-20 token name for this token 代币name
      */
     string public name;
 
     /**
-     * @notice EIP-20 token symbol for this token
+     * @notice EIP-20 token symbol for this token 代币symbol
      */
     string public symbol;
 
     /**
-     * @notice EIP-20 token decimals for this token
+     * @notice EIP-20 token decimals for this token 代币精度
      */
     uint public decimals;
 
     /**
-     * @notice Maximum borrow rate that can ever be applied (.0005% / block)
+     * @notice Maximum borrow rate that can ever be applied (.0005% / block) 最大的借贷利率
      */
     uint constant borrowRateMaxMantissa = 5e14;
 
     /**
-     * @notice Maximum fraction of interest that can be set aside for reserves
+     * @notice Maximum fraction of interest that can be set aside for reserves 最大的利息
      */
     uint constant reserveFactorMaxMantissa = 1e18;
 
     /**
-     * @notice Administrator for this contract
+     * @notice Administrator for this contract 合约的管理者
      */
     address payable public admin;
 
     /**
-     * @notice Pending administrator for this contract
+     * @notice Pending administrator for this contract 合约的待定管理者
      */
     address payable public pendingAdmin;
 
     /**
-     * @notice Contract which oversees inter-cToken operations
+     * @notice Contract which oversees inter-cToken operations 合约的控制者
      */
     ComptrollerInterface public comptroller;
 
     /**
-     * @notice Model which tells what the current interest rate should be
+     * @notice Model which tells what the current interest rate should be 利率模型
      */
     InterestRateModel public interestRateModel;
 
     /**
-     * @notice Initial exchange rate used when minting the first CTokens (used when totalSupply = 0)
+     * @notice Initial exchange rate used when minting the first CTokens (used when totalSupply = 0) 初始的兑换比率
      */
     uint public initialExchangeRateMantissa;
 
     /**
-     * @notice Fraction of interest currently set aside for reserves
+     * @notice Fraction of interest currently set aside for reserves 利息
      */
     uint public reserveFactorMantissa;
 
     /**
-     * @notice Block number that interest was last accrued at
+     * @notice Block number that interest was last accrued at 当前利息所在的区块数
      */
     uint public accrualBlockNumber;
 
     /**
-     * @notice Accumulator of total earned interest since the opening of the market
+     * @notice Accumulator of total earned interest since the opening of the market 累计赚取利息
      */
     uint public borrowIndex;
 
     /**
-     * @notice Total amount of outstanding borrows of the underlying in this market
+     * @notice Total amount of outstanding borrows of the underlying in this market 总借贷数
      */
     uint public totalBorrows;
 
     /**
-     * @notice Total amount of reserves of the underlying held in this market
+     * @notice Total amount of reserves of the underlying held in this market 
      */
     uint public totalReserves;
 
@@ -1332,7 +1332,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Calculates the exchange rate from the underlying to the CToken
+     * @notice Calculates the exchange rate from the underlying to the CToken 计算底层资产及其对应的CToken之间的兑换比例
      * @dev This function does not accrue interest before calculating the exchange rate
      * @return (error code, calculated exchange rate scaled by 1e18)
      */
@@ -2385,19 +2385,19 @@ pragma solidity ^0.5.8;
 contract CErc20 is CToken {
 
     /**
-     * @notice Underlying asset for this CToken
+     * @notice Underlying asset for this CToken 本CToken对应的底层资产的地址
      */
     address public underlying;
 
     /**
-     * @notice Construct a new money market
-     * @param underlying_ The address of the underlying asset
-     * @param comptroller_ The address of the Comptroller
-     * @param interestRateModel_ The address of the interest rate model
-     * @param initialExchangeRateMantissa_ The initial exchange rate, scaled by 1e18
-     * @param name_ ERC-20 name of this token
-     * @param symbol_ ERC-20 symbol of this token
-     * @param decimals_ ERC-20 decimal precision of this token
+     * @notice Construct a new money market 构造函数
+     * @param underlying_ The address of the underlying asset 底层资产地址
+     * @param comptroller_ The address of the Comptroller 
+     * @param interestRateModel_ The address of the interest rate model 利率模型的合约地址
+     * @param initialExchangeRateMantissa_ The initial exchange rate, scaled by 1e18 初始化兑换比例
+     * @param name_ ERC-20 name of this token 代币name
+     * @param symbol_ ERC-20 symbol of this token 代币symbol
+     * @param decimals_ ERC-20 decimal precision of this token 代币精度
      */
     constructor(address underlying_,
                 ComptrollerInterface comptroller_,
@@ -2415,7 +2415,7 @@ contract CErc20 is CToken {
     /*** User Interface ***/
 
     /**
-     * @notice Sender supplies assets into the market and receives cTokens in exchange
+     * @notice Sender supplies assets into the market and receives cTokens in exchange 存入底层资产以铸造CToken
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param mintAmount The amount of the underlying asset to supply
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -2425,7 +2425,7 @@ contract CErc20 is CToken {
     }
 
     /**
-     * @notice Sender redeems cTokens in exchange for the underlying asset
+     * @notice Sender redeems cTokens in exchange for the underlying asset 输入要销毁的CToken数量，销毁CToken以赎回底层资产
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param redeemTokens The number of cTokens to redeem into underlying
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -2435,7 +2435,7 @@ contract CErc20 is CToken {
     }
 
     /**
-     * @notice Sender redeems cTokens in exchange for a specified amount of underlying asset
+     * @notice Sender redeems cTokens in exchange for a specified amount of underlying asset 输入要赎回的底层资产数量，销毁CToken以赎回底层资产
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param redeemAmount The amount of underlying to redeem
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -2445,7 +2445,7 @@ contract CErc20 is CToken {
     }
 
     /**
-      * @notice Sender borrows assets from the protocol to their own address
+      * @notice Sender borrows assets from the protocol to their own address 借贷底层资产
       * @param borrowAmount The amount of the underlying asset to borrow
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
@@ -2454,7 +2454,7 @@ contract CErc20 is CToken {
     }
 
     /**
-     * @notice Sender repays their own borrow
+     * @notice Sender repays their own borrow 归还借贷的底层资产
      * @param repayAmount The amount to repay
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
@@ -2463,7 +2463,7 @@ contract CErc20 is CToken {
     }
 
     /**
-     * @notice Sender repays a borrow belonging to borrower
+     * @notice Sender repays a borrow belonging to borrower 归还借贷的底层资产
      * @param borrower the account with the debt being payed off
      * @param repayAmount The amount to repay
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -2473,7 +2473,7 @@ contract CErc20 is CToken {
     }
 
     /**
-     * @notice The sender liquidates the borrowers collateral.
+     * @notice The sender liquidates the borrowers collateral. 清算借贷者的抵押品
      *  The collateral seized is transferred to the liquidator.
      * @param borrower The borrower of this cToken to be liquidated
      * @param cTokenCollateral The market in which to seize collateral from the borrower
@@ -2487,7 +2487,7 @@ contract CErc20 is CToken {
     /*** Safe Token ***/
 
     /**
-     * @notice Gets balance of this contract in terms of the underlying
+     * @notice Gets balance of this contract in terms of the underlying 获取本合约的底层资产余额
      * @dev This excludes the value of the current message, if any
      * @return The quantity of underlying tokens owned by this contract
      */
