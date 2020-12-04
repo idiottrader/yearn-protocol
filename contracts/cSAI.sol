@@ -810,7 +810,7 @@ pragma solidity ^0.5.8;
 
 
 /**
- * @title Compound's CToken Contract
+ * @title Compound's CToken Contract 核心合约：CToken合约，继承EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGuard；
  * @notice Abstract base for CTokens
  * @author Compound
  */
@@ -821,12 +821,12 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     bool public constant isCToken = true;
 
     /**
-     * @notice EIP-20 token name for this token 代币name
+     * @notice EIP-20 token name for this token 代币名
      */
     string public name;
 
     /**
-     * @notice EIP-20 token symbol for this token 代币symbol
+     * @notice EIP-20 token symbol for this token 代币简称
      */
     string public symbol;
 
@@ -836,12 +836,12 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     uint public decimals;
 
     /**
-     * @notice Maximum borrow rate that can ever be applied (.0005% / block) 最大的借贷利率
+     * @notice Maximum borrow rate that can ever be applied (.0005% / block) 最大的借贷利率 每区块.0005%
      */
     uint constant borrowRateMaxMantissa = 5e14;
 
     /**
-     * @notice Maximum fraction of interest that can be set aside for reserves 最大的利息
+     * @notice Maximum fraction of interest that can be set aside for reserves 利息最大可拿出多少设置为储备金
      */
     uint constant reserveFactorMaxMantissa = 1e18;
 
@@ -871,17 +871,17 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     uint public initialExchangeRateMantissa;
 
     /**
-     * @notice Fraction of interest currently set aside for reserves 利息
+     * @notice Fraction of interest currently set aside for reserves 利息中设置多少作为保证金
      */
     uint public reserveFactorMantissa;
 
     /**
-     * @notice Block number that interest was last accrued at 当前利息所在的区块数
+     * @notice Block number that interest was last accrued at 现在利息计算到哪个区块数
      */
     uint public accrualBlockNumber;
 
     /**
-     * @notice Accumulator of total earned interest since the opening of the market 累计赚取利息
+     * @notice Accumulator of total earned interest since the opening of the market 累计赚取的总利息
      */
     uint public borrowIndex;
 
@@ -891,27 +891,27 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     uint public totalBorrows;
 
     /**
-     * @notice Total amount of reserves of the underlying held in this market 
+     * @notice Total amount of reserves of the underlying held in this market 总储备金
      */
     uint public totalReserves;
 
     /**
-     * @notice Total number of tokens in circulation
+     * @notice Total number of tokens in circulation 流通中的所有CToken
      */
     uint256 public totalSupply;
 
     /**
-     * @notice Official record of token balances for each account
+     * @notice Official record of token balances for each account 官方记录的每个账户的代币数量
      */
     mapping (address => uint256) accountTokens;
 
     /**
-     * @notice Approved token transfer amounts on behalf of others
+     * @notice Approved token transfer amounts on behalf of others 准许转账的地址和数量的映射表
      */
     mapping (address => mapping (address => uint256)) transferAllowances;
 
     /**
-     * @notice Container for borrow balance information
+     * @notice Container for borrow balance information 借贷的快照
      * @member principal Total balance (with accrued interest), after applying the most recent balance-changing action
      * @member interestIndex Global borrowIndex as of the most recent balance-changing action
      */
@@ -921,7 +921,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Mapping of account addresses to outstanding borrow balances
+     * @notice Mapping of account addresses to outstanding borrow balances 借贷地址和数量的映射表
      */
     mapping(address => BorrowSnapshot) accountBorrows;
 
@@ -987,7 +987,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     event NewReserveFactor(uint oldReserveFactorMantissa, uint newReserveFactorMantissa);
 
     /**
-     * @notice Event emitted when the reserves are reduced
+     * @notice Event emitted when the reserves are reduced 储备金减少事件
      */
     event ReservesReduced(address admin, uint reduceAmount, uint newTotalReserves);
 
@@ -997,8 +997,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
      * @param comptroller_ The address of the Comptroller 本合约的审计者
      * @param interestRateModel_ The address of the interest rate model 利息模型
      * @param initialExchangeRateMantissa_ The initial exchange rate, scaled by 1e18 初始的交换比例
-     * @param name_ EIP-20 name of this token 代币name
-     * @param symbol_ EIP-20 symbol of this token 代币symbol
+     * @param name_ EIP-20 name of this token 代币名
+     * @param symbol_ EIP-20 symbol of this token 代币简称
      * @param decimals_ EIP-20 decimal precision of this token 代币精度
      */
     constructor(ComptrollerInterface comptroller_,
@@ -1396,8 +1396,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-      * @notice Applies accrued interest to total borrows and reserves. 计算利息
-      * @dev This calculates interest accrued from the last checkpointed block 利息更新至最新区块
+      * @notice Applies accrued interest to total borrows and reserves. 计算所有借贷和储备金的利息
+      * @dev This calculates interest accrued from the last checkpointed block 利息的计算区间：从上次计算利息的区块至当前区块的区块数
       *      up to the current block and writes new checkpoint to storage.
       */
     function accrueInterest() public returns (uint) {
@@ -1406,6 +1406,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         /* Calculate the current borrow interest rate */
         //计算现在的借贷利率
         (vars.opaqueErr, vars.borrowRateMantissa) = interestRateModel.getBorrowRate(getCashPrior(), totalBorrows, totalReserves);
+        //确保不高于最大的借贷利率
         require(vars.borrowRateMantissa <= borrowRateMaxMantissa, "borrow rate is absurdly high");
         if (vars.opaqueErr != 0) {
             return failOpaque(Error.INTEREST_RATE_MODEL_ERROR, FailureInfo.ACCRUE_INTEREST_BORROW_RATE_CALCULATION_FAILED, vars.opaqueErr);
@@ -1415,11 +1416,12 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         vars.currentBlockNumber = getBlockNumber();
 
         /* Calculate the number of blocks elapsed since the last accrual */
+        //计算上次计算利息的区块至当前区块的数量
         (vars.mathErr, vars.blockDelta) = subUInt(vars.currentBlockNumber, accrualBlockNumber);
         assert(vars.mathErr == MathError.NO_ERROR); // Block delta should always succeed and if it doesn't, blow up.
 
         /*
-         * Calculate the interest accumulated into borrows and reserves and the new index:计算累积的利息
+         * Calculate the interest accumulated into borrows and reserves and the new index:计算累积的利息与最新的利息，计算公式如下：
          *  simpleInterestFactor = borrowRate * blockDelta
          *  interestAccumulated = simpleInterestFactor * totalBorrows
          *  totalBorrowsNew = interestAccumulated + totalBorrows
@@ -1427,6 +1429,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
          *  borrowIndexNew = simpleInterestFactor * borrowIndex + borrowIndex
          */
         (vars.mathErr, vars.simpleInterestFactor) = mulScalar(Exp({mantissa: vars.borrowRateMantissa}), vars.blockDelta);
+        //错误信息检查
         if (vars.mathErr != MathError.NO_ERROR) {
             return failOpaque(Error.MATH_ERROR, FailureInfo.ACCRUE_INTEREST_SIMPLE_INTEREST_FACTOR_CALCULATION_FAILED, uint(vars.mathErr));
         }
@@ -1456,12 +1459,14 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         // (No safe failures beyond this point)
 
         /* We write the previously calculated values into storage */
+        //把当前更新的变量记录下来
         accrualBlockNumber = vars.currentBlockNumber;
         borrowIndex = vars.borrowIndexNew;
         totalBorrows = vars.totalBorrowsNew;
         totalReserves = vars.totalReservesNew;
 
         /* We emit an AccrueInterest event */
+        //触发计算利息事件
         emit AccrueInterest(vars.interestAccumulated, vars.borrowIndexNew, totalBorrows);
 
         return uint(Error.NO_ERROR);
@@ -1469,12 +1474,13 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
 
     /**
      * @notice Sender supplies assets into the market and receives cTokens in exchange 存入底层资产并铸造出CToken
-     * @dev Accrues interest whether or not the operation succeeds, unless reverted
-     * @param mintAmount The amount of the underlying asset to supply
+     * @dev Accrues interest whether or not the operation succeeds, unless reverted 除非回滚，否则只要调用该方法就计算利息
+     * @param mintAmount The amount of the underlying asset to supply 底层资产数量
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
     function mintInternal(uint mintAmount) internal nonReentrant returns (uint) {
         uint error = accrueInterest(); //调用计算利息方法，返回利息计算结果
+        //错误信息检查
         if (error != uint(Error.NO_ERROR)) {
             // accrueInterest emits logs on errors, but we still want to log the fact that an attempted borrow failed
             //利息计算有误，返回失败日志
@@ -1495,19 +1501,21 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
 
     /**
      * @notice User supplies assets into the market and receives cTokens in exchange 存入底层资产并铸造出CToken
-     * @dev Assumes interest has already been accrued up to the current block 
-     * @param minter The address of the account which is supplying the assets
-     * @param mintAmount The amount of the underlying asset to supply
+     * @dev Assumes interest has already been accrued up to the current block 当前区块的利息已经被计算 
+     * @param minter The address of the account which is supplying the assets 底层资产供应者的地址
+     * @param mintAmount The amount of the underlying asset to supply 提供的底层资产的数量
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
     function mintFresh(address minter, uint mintAmount) internal returns (uint) {
         /* Fail if mint not allowed */
+        //需要审计者准许铸造
         uint allowed = comptroller.mintAllowed(address(this), minter, mintAmount);
         if (allowed != 0) {
             return failOpaque(Error.COMPTROLLER_REJECTION, FailureInfo.MINT_COMPTROLLER_REJECTION, allowed);
         }
 
         /* Verify market's block number equals current block number */
+        //验证当前区块高度是不是最新的区块
         if (accrualBlockNumber != getBlockNumber()) {
             return fail(Error.MARKET_NOT_FRESH, FailureInfo.MINT_FRESHNESS_CHECK);
         }
@@ -1525,6 +1533,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
          *  mintTokens = mintAmount / exchangeRate CToken数量 = 存入底层资产数量 / 兑换比例
          */
         (vars.mathErr, vars.exchangeRateMantissa) = exchangeRateStoredInternal();
+        //错误信息检查
         if (vars.mathErr != MathError.NO_ERROR) {
             return failOpaque(Error.MATH_ERROR, FailureInfo.MINT_EXCHANGE_RATE_READ_FAILED, uint(vars.mathErr));
         }
@@ -1535,7 +1544,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         }
 
         /*
-         * We calculate the new total supply of cTokens and minter token balance, checking for overflow:
+         * We calculate the new total supply of cTokens and minter token balance, checking for overflow: 计算CToken的供应量和当前铸造量
          *  totalSupplyNew = totalSupply + mintTokens
          *  accountTokensNew = accountTokens[minter] + mintTokens
          */
@@ -1554,7 +1563,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         // (No safe failures beyond this point)
 
         /*
-         * We call doTransferIn for the minter and the mintAmount
+         * We call doTransferIn for the minter and the mintAmount 铸造CToken并转账给底层资产供应者
          *  Note: The cToken must handle variations between ERC-20 and ETH underlying.
          *  On success, the cToken holds an additional mintAmount of cash.
          *  If doTransferIn fails despite the fact we checked pre-conditions,
@@ -1566,6 +1575,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         }
 
         /* We write previously calculated values into storage */
+        //把当前更新的变量记录下来
         totalSupply = vars.totalSupplyNew;
         accountTokens[minter] = vars.accountTokensNew;
 
@@ -1576,6 +1586,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         emit Transfer(address(this), minter, vars.mintTokens);
 
         /* We call the defense hook */
+        //审计官进行铸造验证
         comptroller.mintVerify(address(this), minter, mintAmount, vars.mintTokens);
 
         return uint(Error.NO_ERROR);
