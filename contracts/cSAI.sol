@@ -856,7 +856,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     address payable public pendingAdmin;
 
     /**
-     * @notice Contract which oversees inter-cToken operations 合约的风险控制者
+     * @notice Contract which oversees inter-cToken operations 合约的审计官
      */
     ComptrollerInterface public comptroller;
 
@@ -929,32 +929,32 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     /*** Market Events ***/
 
     /**
-     * @notice Event emitted when interest is accrued
+     * @notice Event emitted when interest is accrued 应计利息（更新至当前区块）
      */
     event AccrueInterest(uint interestAccumulated, uint borrowIndex, uint totalBorrows);
 
     /**
-     * @notice Event emitted when tokens are minted
+     * @notice Event emitted when tokens are minted 存入底层资产并铸造CToken事件
      */
     event Mint(address minter, uint mintAmount, uint mintTokens);
 
     /**
-     * @notice Event emitted when tokens are redeemed
+     * @notice Event emitted when tokens are redeemed 销毁CToken并赎回底层资产事件
      */
     event Redeem(address redeemer, uint redeemAmount, uint redeemTokens);
 
     /**
-     * @notice Event emitted when underlying is borrowed
+     * @notice Event emitted when underlying is borrowed 借贷事件
      */
     event Borrow(address borrower, uint borrowAmount, uint accountBorrows, uint totalBorrows);
 
     /**
-     * @notice Event emitted when a borrow is repaid
+     * @notice Event emitted when a borrow is repaid 归还借贷事件
      */
     event RepayBorrow(address payer, address borrower, uint repayAmount, uint accountBorrows, uint totalBorrows);
 
     /**
-     * @notice Event emitted when a borrow is liquidated
+     * @notice Event emitted when a borrow is liquidated 清算事件
      */
     event LiquidateBorrow(address liquidator, address borrower, uint repayAmount, address cTokenCollateral, uint seizeTokens);
 
@@ -962,27 +962,27 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     /*** Admin Events ***/
 
     /**
-     * @notice Event emitted when pendingAdmin is changed
+     * @notice Event emitted when pendingAdmin is changed 更换待定管理员
      */
     event NewPendingAdmin(address oldPendingAdmin, address newPendingAdmin);
 
     /**
-     * @notice Event emitted when pendingAdmin is accepted, which means admin is updated
+     * @notice Event emitted when pendingAdmin is accepted, which means admin is updated 更换管理员
      */
     event NewAdmin(address oldAdmin, address newAdmin);
 
     /**
-     * @notice Event emitted when comptroller is changed
+     * @notice Event emitted when comptroller is changed 更换合约审计官
      */
     event NewComptroller(ComptrollerInterface oldComptroller, ComptrollerInterface newComptroller);
 
     /**
-     * @notice Event emitted when interestRateModel is changed
+     * @notice Event emitted when interestRateModel is changed 更新利率计算模型
      */
     event NewMarketInterestRateModel(InterestRateModel oldInterestRateModel, InterestRateModel newInterestRateModel);
 
     /**
-     * @notice Event emitted when the reserve factor is changed
+     * @notice Event emitted when the reserve factor is changed 更新储备因子
      */
     event NewReserveFactor(uint oldReserveFactorMantissa, uint newReserveFactorMantissa);
 
@@ -993,13 +993,13 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
 
 
     /**
-     * @notice Construct a new money market
-     * @param comptroller_ The address of the Comptroller
-     * @param interestRateModel_ The address of the interest rate model
-     * @param initialExchangeRateMantissa_ The initial exchange rate, scaled by 1e18
-     * @param name_ EIP-20 name of this token
-     * @param symbol_ EIP-20 symbol of this token
-     * @param decimals_ EIP-20 decimal precision of this token
+     * @notice Construct a new money market 构造函数，创建一个新的借贷市场
+     * @param comptroller_ The address of the Comptroller 本合约的审计者
+     * @param interestRateModel_ The address of the interest rate model 利息模型
+     * @param initialExchangeRateMantissa_ The initial exchange rate, scaled by 1e18 初始的交换比例
+     * @param name_ EIP-20 name of this token 代币name
+     * @param symbol_ EIP-20 symbol of this token 代币symbol
+     * @param decimals_ EIP-20 decimal precision of this token 代币精度
      */
     constructor(ComptrollerInterface comptroller_,
                 InterestRateModel interestRateModel_,
@@ -1010,19 +1010,21 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         // Set admin to msg.sender
         admin = msg.sender;
 
-        // Set initial exchange rate
+        // Set initial exchange rate 设置初始的底层资产与其CToken的交换比例
         initialExchangeRateMantissa = initialExchangeRateMantissa_;
+        //确保交换比例大于0，CToken数量 = 底层资产数量 / 交换比例
         require(initialExchangeRateMantissa > 0, "Initial exchange rate must be greater than zero.");
 
-        // Set the comptroller
+        // Set the comptroller 设置审计官
         uint err = _setComptroller(comptroller_);
         require(err == uint(Error.NO_ERROR), "Setting comptroller failed");
 
         // Initialize block number and borrow index (block number mocks depend on comptroller being set)
+        // 初始区块高度与借贷指数
         accrualBlockNumber = getBlockNumber();
         borrowIndex = mantissaOne;
 
-        // Set the interest rate model (depends on block number / borrow index)
+        // Set the interest rate model (depends on block number / borrow index) 设置利率模型
         err = _setInterestRateModelFresh(interestRateModel_);
         require(err == uint(Error.NO_ERROR), "Setting interest rate model failed");
 
@@ -1094,9 +1096,11 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         }
 
         /* We emit a Transfer event */
+        //触发转账事件
         emit Transfer(src, dst, tokens);
 
         /* We call the defense hook (which checks for under-collateralization) */
+        //审计官做转账验证
         comptroller.transferVerify(address(this), src, dst, tokens);
 
         return uint(Error.NO_ERROR);
@@ -1312,16 +1316,17 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Accrue interest then return the up-to-date exchange rate
+     * @notice Accrue interest then return the up-to-date exchange rate 计算利息并返回最新的兑换比例
      * @return Calculated exchange rate scaled by 1e18
      */
     function exchangeRateCurrent() public nonReentrant returns (uint) {
+        //确保应计利息更新至当前区块
         require(accrueInterest() == uint(Error.NO_ERROR), "accrue interest failed");
         return exchangeRateStored();
     }
 
     /**
-     * @notice Calculates the exchange rate from the underlying to the CToken
+     * @notice Calculates the exchange rate from the underlying to the CToken 计算底层资产和CToken之间的兑换比例
      * @dev This function does not accrue interest before calculating the exchange rate
      * @return Calculated exchange rate scaled by 1e18
      */
@@ -1346,7 +1351,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         } else {
             /*
              * Otherwise:
-             *  exchangeRate = (totalCash + totalBorrows - totalReserves) / totalSupply
+             *  exchangeRate = (totalCash + totalBorrows - totalReserves) / totalSupply  兑换比例 = （底层资产余额+所有借出的底层资产-准备金）/ 总供应的CToken
              */
             uint totalCash = getCashPrior();
             uint cashPlusBorrowsMinusReserves;
@@ -1399,6 +1404,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         AccrueInterestLocalVars memory vars;
 
         /* Calculate the current borrow interest rate */
+        //计算现在的借贷利率
         (vars.opaqueErr, vars.borrowRateMantissa) = interestRateModel.getBorrowRate(getCashPrior(), totalBorrows, totalReserves);
         require(vars.borrowRateMantissa <= borrowRateMaxMantissa, "borrow rate is absurdly high");
         if (vars.opaqueErr != 0) {
@@ -1413,7 +1419,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         assert(vars.mathErr == MathError.NO_ERROR); // Block delta should always succeed and if it doesn't, blow up.
 
         /*
-         * Calculate the interest accumulated into borrows and reserves and the new index:
+         * Calculate the interest accumulated into borrows and reserves and the new index:计算累积的利息
          *  simpleInterestFactor = borrowRate * blockDelta
          *  interestAccumulated = simpleInterestFactor * totalBorrows
          *  totalBorrowsNew = interestAccumulated + totalBorrows
