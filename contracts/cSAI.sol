@@ -8,7 +8,7 @@ pragma solidity ^0.5.8;
 
 interface ComptrollerInterface {
     /**
-     * @notice Marker function used for light validation when updating the comptroller of a market
+     * @notice Marker function used for light validation when updating the comptroller of a market 审计官的接口
      * @dev Implementations should simply return true.
      * @return true
      */
@@ -84,6 +84,7 @@ interface ComptrollerInterface {
 
 pragma solidity ^0.5.8;
 
+//错误报告合约
 contract ComptrollerErrorReporter {
     enum Error {
         NO_ERROR,
@@ -154,6 +155,7 @@ contract ComptrollerErrorReporter {
     }
 }
 
+//代币错误报告合约
 contract TokenErrorReporter {
     enum Error {
         NO_ERROR,
@@ -292,7 +294,7 @@ contract TokenErrorReporter {
 pragma solidity ^0.5.8;
 
 /**
-  * @title Careful Math
+  * @title Careful Math 安全数学合约
   * @author Compound
   * @notice Derived from OpenZeppelin's SafeMath library
   *         https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/math/SafeMath.sol
@@ -601,7 +603,7 @@ contract Exponential is CarefulMath {
 pragma solidity ^0.5.8;
 
 /**
- * @title ERC 20 Token Standard Interface
+ * @title ERC 20 Token Standard Interface ERC20代币规范的接口
  *  https://eips.ethereum.org/EIPS/eip-20
  */
 interface EIP20Interface {
@@ -663,7 +665,7 @@ interface EIP20Interface {
 pragma solidity ^0.5.8;
 
 /**
- * @title EIP20NonStandardInterface
+ * @title EIP20NonStandardInterface EIP20不标准代币的接口
  * @dev Version of ERC20 with no return values for `transfer` and `transferFrom`
  *  See https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
  */
@@ -736,7 +738,7 @@ interface EIP20NonStandardInterface {
 pragma solidity ^0.5.8;
 
 /**
- * @title Helps contracts guard against reentrancy attacks.
+ * @title Helps contracts guard against reentrancy attacks. 防止重入攻击的合约
  * @author Remco Bloemen <remco@2π.com>, Eenae <alexey@mixbytes.io>
  * @dev If you mark a function `nonReentrant`, you should also
  * mark it `external`.
@@ -771,7 +773,7 @@ contract ReentrancyGuard {
 pragma solidity ^0.5.8;
 
 /**
-  * @title The Compound InterestRateModel Interface
+  * @title The Compound InterestRateModel Interface 利率模型的接口
   * @author Compound
   * @notice Any interest rate model should derive from this contract.
   * @dev These functions are specifically not marked `pure` as implementations of this
@@ -801,13 +803,6 @@ interface InterestRateModel {
 // File: contracts/CToken.sol
 
 pragma solidity ^0.5.8;
-
-
-
-
-
-
-
 
 /**
  * @title Compound's CToken Contract 核心合约：CToken合约，继承EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGuard；
@@ -1765,23 +1760,26 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-      * @notice Users borrow assets from the protocol to their own address
-      * @param borrowAmount The amount of the underlying asset to borrow
+      * @notice Users borrow assets from the protocol to their own address 借贷底层资产
+      * @param borrowAmount The amount of the underlying asset to borrow 需要借的底层资产数量
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
     function borrowFresh(address payable borrower, uint borrowAmount) internal returns (uint) {
         /* Fail if borrow not allowed */
+        //审计官是否准许借贷
         uint allowed = comptroller.borrowAllowed(address(this), borrower, borrowAmount);
         if (allowed != 0) {
             return failOpaque(Error.COMPTROLLER_REJECTION, FailureInfo.BORROW_COMPTROLLER_REJECTION, allowed);
         }
 
         /* Verify market's block number equals current block number */
+        //验证当前区块为最新区块
         if (accrualBlockNumber != getBlockNumber()) {
             return fail(Error.MARKET_NOT_FRESH, FailureInfo.BORROW_FRESHNESS_CHECK);
         }
 
         /* Fail gracefully if protocol has insufficient underlying cash */
+        //不够借贷则报错
         if (getCashPrior() < borrowAmount) {
             return fail(Error.TOKEN_INSUFFICIENT_CASH, FailureInfo.BORROW_CASH_NOT_AVAILABLE);
         }
@@ -1790,7 +1788,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
 
         /*
          * We calculate the new borrower and total borrow balances, failing on overflow:
-         *  accountBorrowsNew = accountBorrows + borrowAmount
+         *  accountBorrowsNew = accountBorrows + borrowAmount 最新的总接待数量
          *  totalBorrowsNew = totalBorrows + borrowAmount
          */
         (vars.mathErr, vars.accountBorrows) = borrowBalanceStoredInternal(borrower);
@@ -1813,7 +1811,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         // (No safe failures beyond this point)
 
         /*
-         * We invoke doTransferOut for the borrower and the borrowAmount.
+         * We invoke doTransferOut for the borrower and the borrowAmount. 借出资产 
          *  Note: The cToken must handle variations between ERC-20 and ETH underlying.
          *  On success, the cToken borrowAmount less of cash.
          *  If doTransferOut fails despite the fact we checked pre-conditions,
@@ -1828,20 +1826,23 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         totalBorrows = vars.totalBorrowsNew;
 
         /* We emit a Borrow event */
+        //触发借贷事件
         emit Borrow(borrower, borrowAmount, vars.accountBorrowsNew, vars.totalBorrowsNew);
 
         /* We call the defense hook */
+        //审计官审计事件
         comptroller.borrowVerify(address(this), borrower, borrowAmount);
 
         return uint(Error.NO_ERROR);
     }
 
     /**
-     * @notice Sender repays their own borrow
-     * @param repayAmount The amount to repay
+     * @notice Sender repays their own borrow 归还借贷
+     * @param repayAmount The amount to repay 归还数量
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
     function repayBorrowInternal(uint repayAmount) internal nonReentrant returns (uint) {
+        //利息更新至最新区块
         uint error = accrueInterest();
         if (error != uint(Error.NO_ERROR)) {
             // accrueInterest emits logs on errors, but we still want to log the fact that an attempted borrow failed
@@ -1852,12 +1853,13 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Sender repays a borrow belonging to borrower
-     * @param borrower the account with the debt being payed off
-     * @param repayAmount The amount to repay
+     * @notice Sender repays a borrow belonging to borrower 归还借贷
+     * @param borrower the account with the debt being payed off 借贷者地址
+     * @param repayAmount The amount to repay 归还数量
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
     function repayBorrowBehalfInternal(address borrower, uint repayAmount) internal nonReentrant returns (uint) {
+        //利息更新至最新区块
         uint error = accrueInterest();
         if (error != uint(Error.NO_ERROR)) {
             // accrueInterest emits logs on errors, but we still want to log the fact that an attempted borrow failed
@@ -1878,20 +1880,22 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Borrows are repaid by another user (possibly the borrower).
-     * @param payer the account paying off the borrow
-     * @param borrower the account with the debt being payed off
-     * @param repayAmount the amount of undelrying tokens being returned
+     * @notice Borrows are repaid by another user (possibly the borrower). 归还借贷
+     * @param payer the account paying off the borrow 付款地址
+     * @param borrower the account with the debt being payed off 借款地址
+     * @param repayAmount the amount of undelrying tokens being returned 归还数量
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
     function repayBorrowFresh(address payer, address borrower, uint repayAmount) internal returns (uint) {
         /* Fail if repayBorrow not allowed */
+        //审计官准许归还
         uint allowed = comptroller.repayBorrowAllowed(address(this), payer, borrower, repayAmount);
         if (allowed != 0) {
             return failOpaque(Error.COMPTROLLER_REJECTION, FailureInfo.REPAY_BORROW_COMPTROLLER_REJECTION, allowed);
         }
 
         /* Verify market's block number equals current block number */
+        //验证当前区块是否为最新区块
         if (accrualBlockNumber != getBlockNumber()) {
             return fail(Error.MARKET_NOT_FRESH, FailureInfo.REPAY_BORROW_FRESHNESS_CHECK);
         }
@@ -1922,7 +1926,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
 
         /*
          * We calculate the new borrower and total borrow balances, failing on underflow:
-         *  accountBorrowsNew = accountBorrows - repayAmount
+         *  accountBorrowsNew = accountBorrows - repayAmount  最新的借贷总额
          *  totalBorrowsNew = totalBorrows - repayAmount
          */
         (vars.mathErr, vars.accountBorrowsNew) = subUInt(vars.accountBorrows, vars.repayAmount);
@@ -1940,7 +1944,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         // (No safe failures beyond this point)
 
         /*
-         * We call doTransferIn for the payer and the repayAmount
+         * We call doTransferIn for the payer and the repayAmount 归还转账操作
          *  Note: The cToken must handle variations between ERC-20 and ETH underlying.
          *  On success, the cToken holds an additional repayAmount of cash.
          *  If doTransferIn fails despite the fact we checked pre-conditions,
@@ -1955,9 +1959,11 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         totalBorrows = vars.totalBorrowsNew;
 
         /* We emit a RepayBorrow event */
+        //触发归还事件
         emit RepayBorrow(payer, borrower, vars.repayAmount, vars.accountBorrowsNew, vars.totalBorrowsNew);
 
         /* We call the defense hook */
+        //审计官验证
         comptroller.repayBorrowVerify(address(this), payer, borrower, vars.repayAmount, vars.borrowerIndex);
 
         return uint(Error.NO_ERROR);
@@ -1965,10 +1971,10 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
 
     /**
      * @notice The sender liquidates the borrowers collateral. 清算借贷者的抵押品
-     *  The collateral seized is transferred to the liquidator.
-     * @param borrower The borrower of this cToken to be liquidated
-     * @param cTokenCollateral The market in which to seize collateral from the borrower
-     * @param repayAmount The amount of the underlying borrowed asset to repay
+     *  The collateral seized is transferred to the liquidator. 没收抵押品转给清算者
+     * @param borrower The borrower of this cToken to be liquidated 借贷者地址
+     * @param cTokenCollateral The market in which to seize collateral from the borrower 罚没的CToken数量
+     * @param repayAmount The amount of the underlying borrowed asset to repay 归还的底层资产数量
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
     function liquidateBorrowInternal(address borrower, uint repayAmount, CToken cTokenCollateral) internal nonReentrant returns (uint) {
@@ -1991,31 +1997,35 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
 
     /**
      * @notice The liquidator liquidates the borrowers collateral. 清算借贷者的抵押品
-     *  The collateral seized is transferred to the liquidator.
-     * @param borrower The borrower of this cToken to be liquidated
-     * @param liquidator The address repaying the borrow and seizing collateral
-     * @param cTokenCollateral The market in which to seize collateral from the borrower
-     * @param repayAmount The amount of the underlying borrowed asset to repay
+     *  The collateral seized is transferred to the liquidator. 没收抵押品转给清算者
+     * @param borrower The borrower of this cToken to be liquidated 借贷者地址
+     * @param liquidator The address repaying the borrow and seizing collateral 清算者地址
+     * @param cTokenCollateral The market in which to seize collateral from the borrower 罚没的CToken数量
+     * @param repayAmount The amount of the underlying borrowed asset to repay 归还的底层资产数量
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
     function liquidateBorrowFresh(address liquidator, address borrower, uint repayAmount, CToken cTokenCollateral) internal returns (uint) {
         /* Fail if liquidate not allowed */
+        //审计官准许
         uint allowed = comptroller.liquidateBorrowAllowed(address(this), address(cTokenCollateral), liquidator, borrower, repayAmount);
         if (allowed != 0) {
             return failOpaque(Error.COMPTROLLER_REJECTION, FailureInfo.LIQUIDATE_COMPTROLLER_REJECTION, allowed);
         }
 
         /* Verify market's block number equals current block number */
+        //验证当前区块为最新区块
         if (accrualBlockNumber != getBlockNumber()) {
             return fail(Error.MARKET_NOT_FRESH, FailureInfo.LIQUIDATE_FRESHNESS_CHECK);
         }
 
         /* Verify cTokenCollateral market's block number equals current block number */
+        //验证CToekn的抵押市场的当前区块为最新区块
         if (cTokenCollateral.accrualBlockNumber() != getBlockNumber()) {
             return fail(Error.MARKET_NOT_FRESH, FailureInfo.LIQUIDATE_COLLATERAL_FRESHNESS_CHECK);
         }
 
         /* Fail if borrower = liquidator */
+        //借贷者和清算者不能为同一地址
         if (borrower == liquidator) {
             return fail(Error.INVALID_ACCOUNT_PAIR, FailureInfo.LIQUIDATE_LIQUIDATOR_IS_BORROWER);
         }
@@ -2031,30 +2041,36 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         }
 
         /* We calculate the number of collateral tokens that will be seized */
+        //计算需要罚没的CToken数量
         (uint amountSeizeError, uint seizeTokens) = comptroller.liquidateCalculateSeizeTokens(address(this), address(cTokenCollateral), repayAmount);
         if (amountSeizeError != 0) {
             return failOpaque(Error.COMPTROLLER_CALCULATION_ERROR, FailureInfo.LIQUIDATE_COMPTROLLER_CALCULATE_AMOUNT_SEIZE_FAILED, amountSeizeError);
         }
 
         /* Fail if seizeTokens > borrower collateral token balance */
+        //罚没数量大于借贷者抵押数量时报错
         if (seizeTokens > cTokenCollateral.balanceOf(borrower)) {
             return fail(Error.TOKEN_INSUFFICIENT_BALANCE, FailureInfo.LIQUIDATE_SEIZE_TOO_MUCH);
         }
 
         /* Fail if repayBorrow fails */
+        //归还资产失败时报错
         uint repayBorrowError = repayBorrowFresh(liquidator, borrower, repayAmount);
         if (repayBorrowError != uint(Error.NO_ERROR)) {
             return fail(Error(repayBorrowError), FailureInfo.LIQUIDATE_REPAY_BORROW_FRESH_FAILED);
         }
 
         /* Revert if seize tokens fails (since we cannot be sure of side effects) */
+        //罚没CToken失败时回滚
         uint seizeError = cTokenCollateral.seize(liquidator, borrower, seizeTokens);
         require(seizeError == uint(Error.NO_ERROR), "token seizure failed");
 
         /* We emit a LiquidateBorrow event */
+        //触发清算事件
         emit LiquidateBorrow(liquidator, borrower, repayAmount, address(cTokenCollateral), seizeTokens);
 
         /* We call the defense hook */
+        //审计官验证
         comptroller.liquidateBorrowVerify(address(this), address(cTokenCollateral), liquidator, borrower, repayAmount, seizeTokens);
 
         return uint(Error.NO_ERROR);
@@ -2064,19 +2080,21 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
      * @notice Transfers collateral tokens (this market) to the liquidator. 把要清算的抵押品转账给清算者
      * @dev Will fail unless called by another cToken during the process of liquidation.
      *  Its absolutely critical to use msg.sender as the borrowed cToken and not a parameter.
-     * @param liquidator The account receiving seized collateral
-     * @param borrower The account having collateral seized
-     * @param seizeTokens The number of cTokens to seize
+     * @param liquidator The account receiving seized collateral 清算者地址
+     * @param borrower The account having collateral seized 借贷者地址
+     * @param seizeTokens The number of cTokens to seize 罚没的CToken数量
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
     function seize(address liquidator, address borrower, uint seizeTokens) external nonReentrant returns (uint) {
         /* Fail if seize not allowed */
+        //审计官准许
         uint allowed = comptroller.seizeAllowed(address(this), msg.sender, liquidator, borrower, seizeTokens);
         if (allowed != 0) {
             return failOpaque(Error.COMPTROLLER_REJECTION, FailureInfo.LIQUIDATE_SEIZE_COMPTROLLER_REJECTION, allowed);
         }
 
         /* Fail if borrower = liquidator */
+        //借贷者和清算者不能是同个地址
         if (borrower == liquidator) {
             return fail(Error.INVALID_ACCOUNT_PAIR, FailureInfo.LIQUIDATE_SEIZE_LIQUIDATOR_IS_BORROWER);
         }
@@ -2086,7 +2104,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         uint liquidatorTokensNew;
 
         /*
-         * We calculate the new borrower and liquidator token balances, failing on underflow/overflow:
+         * We calculate the new borrower and liquidator token balances, failing on underflow/overflow: 计算最新的借贷资产的清算资产
          *  borrowerTokensNew = accountTokens[borrower] - seizeTokens
          *  liquidatorTokensNew = accountTokens[liquidator] + seizeTokens
          */
@@ -2105,13 +2123,16 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         // (No safe failures beyond this point)
 
         /* We write the previously calculated values into storage */
+        //把更新的借贷数量和清算数量记录下来
         accountTokens[borrower] = borrowerTokensNew;
         accountTokens[liquidator] = liquidatorTokensNew;
 
         /* Emit a Transfer event */
+        //触发转账事件 把要罚没的CToken从借贷者那里转给清算者
         emit Transfer(borrower, liquidator, seizeTokens);
 
         /* We call the defense hook */
+        //审计官验证
         comptroller.seizeVerify(address(this), msg.sender, liquidator, borrower, seizeTokens);
 
         return uint(Error.NO_ERROR);
@@ -2119,6 +2140,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
 
 
     /*** Admin Functions ***/
+    //管理类方法
 
     /**
       * @notice Begins transfer of admin rights. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
@@ -2198,7 +2220,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-      * @notice accrues interest and sets a new reserve factor for the protocol using _setReserveFactorFresh
+      * @notice accrues interest and sets a new reserve factor for the protocol using _setReserveFactorFresh 设置储备金比例
       * @dev Admin function to accrue interest and set a new reserve factor
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
@@ -2213,7 +2235,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-      * @notice Sets a new reserve factor for the protocol (*requires fresh interest accrual)
+      * @notice Sets a new reserve factor for the protocol (*requires fresh interest accrual) 设置储备金比例
       * @dev Admin function to set a new reserve factor
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
@@ -2224,12 +2246,14 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         }
 
         // Verify market's block number equals current block number
+        //验证当前区块是否为最新区块
         if (accrualBlockNumber != getBlockNumber()) {
             // TODO: static_assert + no error code?
             return fail(Error.MARKET_NOT_FRESH, FailureInfo.SET_RESERVE_FACTOR_FRESH_CHECK);
         }
 
         // Check newReserveFactor ≤ maxReserveFactor
+        //储备金比例需要小于最大的储备金比例
         if (newReserveFactorMantissa > reserveFactorMaxMantissa) {
             return fail(Error.BAD_INPUT, FailureInfo.SET_RESERVE_FACTOR_BOUNDS_CHECK);
         }
@@ -2237,13 +2261,14 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         uint oldReserveFactorMantissa = reserveFactorMantissa;
         reserveFactorMantissa = newReserveFactorMantissa;
 
+        //触发更新储备金的事件
         emit NewReserveFactor(oldReserveFactorMantissa, newReserveFactorMantissa);
 
         return uint(Error.NO_ERROR);
     }
 
     /**
-     * @notice Accrues interest and reduces reserves by transferring to admin
+     * @notice Accrues interest and reduces reserves by transferring to admin 减少储备金
      * @param reduceAmount Amount of reduction to reserves
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
@@ -2258,7 +2283,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Reduces reserves by transferring to admin
+     * @notice Reduces reserves by transferring to admin 减少储备金
      * @dev Requires fresh interest accrual
      * @param reduceAmount Amount of reduction to reserves
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -2306,6 +2331,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         // we revert on the failure of this command
         require(err == Error.NO_ERROR, "reduce reserves transfer out failed");
 
+        //触发准备金减少事件
         emit ReservesReduced(admin, reduceAmount, totalReservesNew);
 
         return uint(Error.NO_ERROR);
