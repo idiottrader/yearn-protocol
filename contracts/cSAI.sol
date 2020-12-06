@@ -1,4 +1,17 @@
 /**
+ * SAI代币的借贷市场；
+ * SAI本来是MakerDao的单抵押代币(锚定美元)，现在已停止发行。（MakerDao现在用的是多抵押代币：DAI）
+ * SAI货币借贷市场通过CToken合约进行实现，主要方法如下：
+ *   1.mint铸造
+ *   2.redeem赎回
+ *   3.borrow借贷
+ *   4.repayBorrow归还借贷
+ *   5.liquidate清算
+ * 注解：TimBear   20201206
+ */
+
+
+/**
  *Submitted for verification at Etherscan.io on 2019-05-07
 */
 
@@ -1825,7 +1838,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
       */
     function borrowFresh(address payable borrower, uint borrowAmount) internal returns (uint) {
         /* Fail if borrow not allowed */
-        //审计官是否准许借贷
+        //审计官审计抵押品是否足以进行借贷
         uint allowed = comptroller.borrowAllowed(address(this), borrower, borrowAmount);
         if (allowed != 0) {
             return failOpaque(Error.COMPTROLLER_REJECTION, FailureInfo.BORROW_COMPTROLLER_REJECTION, allowed);
@@ -1838,7 +1851,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         }
 
         /* Fail gracefully if protocol has insufficient underlying cash */
-        //不够借贷则报错
+        //不够抵押品进行借贷时则报错
         if (getCashPrior() < borrowAmount) {
             return fail(Error.TOKEN_INSUFFICIENT_CASH, FailureInfo.BORROW_CASH_NOT_AVAILABLE);
         }
