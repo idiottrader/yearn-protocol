@@ -8,7 +8,8 @@ pragma solidity ^0.5.8;
 
 interface ComptrollerInterface {
     /**
-     * @notice Marker function used for light validation when updating the comptroller of a market 审计官的接口
+     * 审计官合约的接口
+     * @notice Marker function used for light validation when updating the comptroller of a market 
      * @dev Implementations should simply return true.
      * @return true
      */
@@ -84,7 +85,9 @@ interface ComptrollerInterface {
 
 pragma solidity ^0.5.8;
 
-//错误报告合约
+/**
+ *审计错误报告
+ */
 contract ComptrollerErrorReporter {
     enum Error {
         NO_ERROR,
@@ -155,7 +158,9 @@ contract ComptrollerErrorReporter {
     }
 }
 
-//代币错误报告合约
+/**
+ *代币错误报告
+ */
 contract TokenErrorReporter {
     enum Error {
         NO_ERROR,
@@ -294,7 +299,8 @@ contract TokenErrorReporter {
 pragma solidity ^0.5.8;
 
 /**
-  * @title Careful Math 安全数学合约
+  * 安全数学合约
+  * @title Careful Math 
   * @author Compound
   * @notice Derived from OpenZeppelin's SafeMath library
   *         https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/math/SafeMath.sol
@@ -383,7 +389,8 @@ pragma solidity ^0.5.8;
 
 
 /**
- * @title Exponential module for storing fixed-decision decimals
+ * 浮点数的计算处理，继承安全数学合约
+ * @title Exponential module for storing fixed-decision decimals 
  * @author Compound
  * @notice Exp is a struct which stores decimals with a fixed precision of 18 decimal places.
  *         Thus, if we wanted to store the 5.1, mantissa would store 5.1e18. That is:
@@ -603,7 +610,8 @@ contract Exponential is CarefulMath {
 pragma solidity ^0.5.8;
 
 /**
- * @title ERC 20 Token Standard Interface ERC20代币规范的接口
+ * ERC20的接口
+ * @title ERC 20 Token Standard Interface
  *  https://eips.ethereum.org/EIPS/eip-20
  */
 interface EIP20Interface {
@@ -665,7 +673,8 @@ interface EIP20Interface {
 pragma solidity ^0.5.8;
 
 /**
- * @title EIP20NonStandardInterface EIP20不标准代币的接口
+ * EIP20非标准的接口
+ * @title EIP20NonStandardInterface 
  * @dev Version of ERC20 with no return values for `transfer` and `transferFrom`
  *  See https://medium.com/coinmonks/missing-return-value-bug-at-least-130-tokens-affected-d67bf08521ca
  */
@@ -738,7 +747,8 @@ interface EIP20NonStandardInterface {
 pragma solidity ^0.5.8;
 
 /**
- * @title Helps contracts guard against reentrancy attacks. 防止重入攻击的合约
+ * 防止重入攻击
+ * @title Helps contracts guard against reentrancy attacks. 
  * @author Remco Bloemen <remco@2π.com>, Eenae <alexey@mixbytes.io>
  * @dev If you mark a function `nonReentrant`, you should also
  * mark it `external`.
@@ -761,7 +771,7 @@ contract ReentrancyGuard {
      * `private` function that does the actual work.
      */
     modifier nonReentrant() {
-        _guardCounter += 1;
+        _guardCounter += 1;7
         uint256 localCounter = _guardCounter;
         _;
         require(localCounter == _guardCounter, "re-entered");
@@ -773,7 +783,8 @@ contract ReentrancyGuard {
 pragma solidity ^0.5.8;
 
 /**
-  * @title The Compound InterestRateModel Interface 利率模型的接口
+  * 利率模型的接口
+  * @title The Compound InterestRateModel Interface 
   * @author Compound
   * @notice Any interest rate model should derive from this contract.
   * @dev These functions are specifically not marked `pure` as implementations of this
@@ -805,7 +816,8 @@ interface InterestRateModel {
 pragma solidity ^0.5.8;
 
 /**
- * @title Compound's CToken Contract 核心合约：CToken合约，继承EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGuard；
+ * compound核心合约：CToken合约，继承EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGuard
+ * @title Compound's CToken Contract
  * @notice Abstract base for CTokens
  * @author Compound
  */
@@ -831,7 +843,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     uint public decimals;
 
     /**
-     * @notice Maximum borrow rate that can ever be applied (.0005% / block) 最大的借贷利率 每区块.0005%
+     * @notice Maximum borrow rate that can ever be applied (.0005% / block) 最大的借贷利率 每区块为0.0005%
      */
     uint constant borrowRateMaxMantissa = 5e14;
 
@@ -866,12 +878,12 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     uint public initialExchangeRateMantissa;
 
     /**
-     * @notice Fraction of interest currently set aside for reserves 利息中设置多少作为保证金
+     * @notice Fraction of interest currently set aside for reserves 利息中设置多少作为储备金
      */
     uint public reserveFactorMantissa;
 
     /**
-     * @notice Block number that interest was last accrued at 现在利息计算到哪个区块数
+     * @notice Block number that interest was last accrued at 现在利息计算到哪个区块高度
      */
     uint public accrualBlockNumber;
 
@@ -896,7 +908,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     uint256 public totalSupply;
 
     /**
-     * @notice Official record of token balances for each account 官方记录的每个账户的代币数量
+     * @notice Official record of token balances for each account 映射表：记录每个账户的代币数量
      */
     mapping (address => uint256) accountTokens;
 
@@ -906,7 +918,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     mapping (address => mapping (address => uint256)) transferAllowances;
 
     /**
-     * @notice Container for borrow balance information 借贷的快照
+     * 借贷的快照
+     * @notice Container for borrow balance information 
      * @member principal Total balance (with accrued interest), after applying the most recent balance-changing action
      * @member interestIndex Global borrowIndex as of the most recent balance-changing action
      */
@@ -988,7 +1001,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
 
 
     /**
-     * @notice Construct a new money market 构造函数，创建一个新的借贷市场
+     * 构造函数，创建一个新的借贷市场
+     * @notice Construct a new money market 
      * @param comptroller_ The address of the Comptroller 本合约的审计者
      * @param interestRateModel_ The address of the interest rate model 利息模型
      * @param initialExchangeRateMantissa_ The initial exchange rate, scaled by 1e18 初始的交换比例
@@ -1029,12 +1043,13 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Transfer `tokens` tokens from `src` to `dst` by `spender`
+     * 转账操作
+     * @notice Transfer `tokens` tokens from `src` to `dst` by `spender` 
      * @dev Called by both `transfer` and `transferFrom` internally
-     * @param spender The address of the account performing the transfer
-     * @param src The address of the source account
-     * @param dst The address of the destination account
-     * @param tokens The number of tokens to transfer
+     * @param spender The address of the account performing the transfer 转账执行者
+     * @param src The address of the source account 转出地址
+     * @param dst The address of the destination account 转入地址
+     * @param tokens The number of tokens to transfer 转账数量
      * @return Whether or not the transfer succeeded
      */
     function transferTokens(address spender, address src, address dst, uint tokens) internal returns (uint) {
@@ -1045,11 +1060,13 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         }
 
         /* Do not allow self-transfers */
+        //不能自己给自己转账
         if (src == dst) {
             return fail(Error.BAD_INPUT, FailureInfo.TRANSFER_NOT_ALLOWED);
         }
 
         /* Get the allowance, infinite for the account owner */
+        //获取授权数量
         uint startingAllowance = 0;
         if (spender == src) {
             startingAllowance = uint(-1);
@@ -1102,16 +1119,18 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Transfer `amount` tokens from `msg.sender` to `dst`
-     * @param dst The address of the destination account
-     * @param amount The number of tokens to transfer
-     * @return Whether or not the transfer succeeded
+     * 转账操作
+     * @notice Transfer `amount` tokens from `msg.sender` to `dst` 
+     * @param dst The address of the destination account 目标账户地址
+     * @param amount The number of tokens to transfer 转账数量
+     * @return Whether or not the transfer succeeded 
      */
     function transfer(address dst, uint256 amount) external nonReentrant returns (bool) {
         return transferTokens(msg.sender, msg.sender, dst, amount) == uint(Error.NO_ERROR);
     }
 
     /**
+     * transferFrom转账操作，一般与approve方法一起用
      * @notice Transfer `amount` tokens from `src` to `dst`
      * @param src The address of the source account
      * @param dst The address of the destination account
@@ -1123,7 +1142,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Approve `spender` to transfer up to `amount` from `src`
+     * 授权转账操作
+     * @notice Approve `spender` to transfer up to `amount` from `src` 
      * @dev This will overwrite the approval amount for `spender`
      *  and is subject to issues noted [here](https://eips.ethereum.org/EIPS/eip-20#approve)
      * @param spender The address of the account which may transfer tokens
@@ -1138,7 +1158,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Get the current allowance from `owner` for `spender`
+     * 获取当前的授权数量
+     * @notice Get the current allowance from `owner` for `spender` 
      * @param owner The address of the account which owns the tokens to be spent
      * @param spender The address of the account which may transfer tokens
      * @return The number of tokens allowed to be spent (-1 means infinite)
@@ -1148,7 +1169,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Get the token balance of the `owner`
+     * 获取CToken余额
+     * @notice Get the token balance of the `owner` 
      * @param owner The address of the account to query
      * @return The number of tokens owned by `owner`
      */
@@ -1157,7 +1179,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Get the underlying balance of the `owner`
+     * 获取底层资产数量
+     * @notice Get the underlying balance of the `owner` 
      * @dev This also accrues interest in a transaction
      * @param owner The address of the account to query
      * @return The amount of underlying owned by `owner`
@@ -1170,7 +1193,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Get a snapshot of the account's balances, and the cached exchange rate
+     * 获取账户的快照和兑换比例
+     * @notice Get a snapshot of the account's balances, and the cached exchange rate 
      * @dev This is used by comptroller to more efficiently perform liquidity checks.
      * @param account Address of the account to snapshot
      * @return (possible error, token balance, borrow balance, exchange rate mantissa)
@@ -1196,7 +1220,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @dev Function to simply retrieve block number
+     * 获取当前区块数量
+     * @dev Function to simply retrieve block number 
      *  This exists mainly for inheriting test contracts to stub this result.
      */
     function getBlockNumber() internal view returns (uint) {
@@ -1204,6 +1229,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
+     * 获取每个区块的借贷利率
      * @notice Returns the current per-block borrow interest rate for this cToken
      * @return The borrow interest rate per block, scaled by 1e18
      */
@@ -1214,6 +1240,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
+     * 获取每个区块的供应利率
      * @notice Returns the current per-block supply interest rate for this cToken
      * @return The supply interest rate per block, scaled by 1e18
      */
@@ -1244,6 +1271,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
+     * 获取总借贷数量
      * @notice Returns the current total borrows plus accrued interest
      * @return The total borrows with interest
      */
@@ -1253,6 +1281,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
+     * 获取具体账户的借贷余额
      * @notice Accrue interest to updated borrowIndex and then calculate account's borrow balance using the updated borrowIndex
      * @param account The address whose balance should be calculated after updating borrowIndex
      * @return The calculated balance
@@ -1263,6 +1292,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
+     * 获取具体账户的借贷余额
      * @notice Return the borrow balance of account based on stored data
      * @param account The address whose balance should be calculated
      * @return The calculated balance
@@ -1274,6 +1304,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
+     * 获取具体账户的借贷余额
      * @notice Return the borrow balance of account based on stored data
      * @param account The address whose balance should be calculated
      * @return (error code, the calculated balance or 0 if error code is non-zero)
@@ -1311,7 +1342,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Accrue interest then return the up-to-date exchange rate 计算利息并返回最新的兑换比例
+     * 计算利息并返回最新的兑换比例
+     * @notice Accrue interest then return the up-to-date exchange rate 
      * @return Calculated exchange rate scaled by 1e18
      */
     function exchangeRateCurrent() public nonReentrant returns (uint) {
@@ -1321,7 +1353,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Calculates the exchange rate from the underlying to the CToken 计算底层资产和CToken之间的兑换比例
+     * 计算底层资产和CToken之间的兑换比例
+     * @notice Calculates the exchange rate from the underlying to the CToken 
      * @dev This function does not accrue interest before calculating the exchange rate
      * @return Calculated exchange rate scaled by 1e18
      */
@@ -1332,7 +1365,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Calculates the exchange rate from the underlying to the CToken 计算底层资产及其对应的CToken之间的兑换比例
+     * 计算底层资产及其对应的CToken之间的兑换比例
+     * @notice Calculates the exchange rate from the underlying to the CToken 
      * @dev This function does not accrue interest before calculating the exchange rate
      * @return (error code, calculated exchange rate scaled by 1e18)
      */
@@ -1346,7 +1380,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         } else {
             /*
              * Otherwise:
-             *  exchangeRate = (totalCash + totalBorrows - totalReserves) / totalSupply  兑换比例 = （底层资产余额+所有借出的底层资产-准备金）/ 总供应的CToken
+             * 兑换比例 = （底层资产余额+所有借出的底层资产-准备金）/ 总供应的CToken ！！！！
+             * exchangeRate = (totalCash + totalBorrows - totalReserves) / totalSupply  
              */
             uint totalCash = getCashPrior();
             uint cashPlusBorrowsMinusReserves;
@@ -1368,6 +1403,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
+     * 获取底层资产的数量
      * @notice Get cash balance of this cToken in the underlying asset
      * @return The quantity of underlying asset owned by this contract
      */
@@ -1375,6 +1411,9 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         return getCashPrior();
     }
 
+    /**
+     * 结构体：利息计算的本地变量
+     */
     struct AccrueInterestLocalVars {
         MathError mathErr;
         uint opaqueErr;
@@ -1391,8 +1430,9 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-      * @notice Applies accrued interest to total borrows and reserves. 计算所有借贷和储备金的利息
-      * @dev This calculates interest accrued from the last checkpointed block 利息的计算区间：从上次计算利息的区块至当前区块的区块数
+      * 计算所有借贷和储备金的利息
+      * @notice Applies accrued interest to total borrows and reserves. 
+      * @dev This calculates interest accrued from the last checkpointed block 利息的计算区间：从上次计算利息的区块至当前区块的区块数 ！！！！
       *      up to the current block and writes new checkpoint to storage.
       */
     function accrueInterest() public returns (uint) {
@@ -1468,7 +1508,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Sender supplies assets into the market and receives cTokens in exchange 存入底层资产并铸造出CToken
+     * 存入底层资产并铸造出CToken
+     * @notice Sender supplies assets into the market and receives cTokens in exchange 
      * @dev Accrues interest whether or not the operation succeeds, unless reverted 除非回滚，否则只要调用该方法就计算利息
      * @param mintAmount The amount of the underlying asset to supply 底层资产数量
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -1485,6 +1526,9 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         return mintFresh(msg.sender, mintAmount);
     }
 
+    /**
+     * 结构体：铸造的本地变量
+     */
     struct MintLocalVars {
         Error err;
         MathError mathErr;
@@ -1495,7 +1539,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice User supplies assets into the market and receives cTokens in exchange 存入底层资产并铸造出CToken
+     * 存入底层资产并铸造出CToken
+     * @notice User supplies assets into the market and receives cTokens in exchange 
      * @dev Assumes interest has already been accrued up to the current block 当前区块的利息已经被计算 
      * @param minter The address of the account which is supplying the assets 底层资产供应者的地址
      * @param mintAmount The amount of the underlying asset to supply 提供的底层资产的数量
@@ -1525,7 +1570,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
 
         /*
          * We get the current exchange rate and calculate the number of cTokens to be minted:
-         *  mintTokens = mintAmount / exchangeRate CToken数量 = 存入底层资产数量 / 兑换比例
+         *  mintTokens = mintAmount / exchangeRate CToken 数量 = 存入底层资产数量 / 兑换比例
          */
         (vars.mathErr, vars.exchangeRateMantissa) = exchangeRateStoredInternal();
         //错误信息检查
@@ -1588,7 +1633,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Sender redeems cTokens in exchange for the underlying asset 输入要销毁的CToken数量，销毁CToken以赎回底层资产
+     * 输入要销毁的CToken数量，销毁CToken以赎回底层资产
+     * @notice Sender redeems cTokens in exchange for the underlying asset 
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param redeemTokens The number of cTokens to redeem into underlying
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -1604,7 +1650,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Sender redeems cTokens in exchange for a specified amount of underlying asset 输入要赎回的底层资产数量，销毁CToken以赎回底层资产
+     * 输入要赎回的底层资产数量，销毁CToken以赎回底层资产
+     * @notice Sender redeems cTokens in exchange for a specified amount of underlying asset 
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param redeemAmount The amount of underlying to redeem
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -1619,6 +1666,9 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         return redeemFresh(msg.sender, 0, redeemAmount);
     }
 
+    /**
+     * 结构体：赎回的本地变量
+     */
     struct RedeemLocalVars {
         Error err;
         MathError mathErr;
@@ -1630,7 +1680,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice User redeems cTokens in exchange for the underlying asset 销毁CToken以赎回底层资产
+     * 销毁CToken以赎回底层资产
+     * @notice User redeems cTokens in exchange for the underlying asset 
      * @dev Assumes interest has already been accrued up to the current block 假设到当前区块为止已经产生了利息（应记利息）
      * @param redeemer The address of the account which is redeeming the tokens
      * @param redeemTokensIn The number of cTokens to redeem into underlying (only one of redeemTokensIn or redeemAmountIn may be zero) 要赎回的CToken数量
@@ -1663,6 +1714,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
             }
         } else {
             /*
+             * 换取兑换比例，计算销毁的CToken能换取多少底层资产
              * We get the current exchange rate and calculate the amount to be redeemed:
              *  redeemTokens = redeemAmountIn / exchangeRate
              *  redeemAmount = redeemAmountIn
@@ -1683,6 +1735,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         }
 
         /* Verify market's block number equals current block number */
+        //验证当前区块高度是否为最新区块高度
         if (accrualBlockNumber != getBlockNumber()) {
             return fail(Error.MARKET_NOT_FRESH, FailureInfo.REDEEM_FRESHNESS_CHECK);
         }
@@ -1712,6 +1765,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         // (No safe failures beyond this point)
 
         /*
+         * 赎回的转账操作
          * We invoke doTransferOut for the redeemer and the redeemAmount.
          *  Note: The cToken must handle variations between ERC-20 and ETH underlying.
          *  On success, the cToken has redeemAmount less of cash.
@@ -1737,7 +1791,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-      * @notice Sender borrows assets from the protocol to their own address 借贷底层资产
+      * 借贷底层资产
+      * @notice Sender borrows assets from the protocol to their own address 
       * @param borrowAmount The amount of the underlying asset to borrow
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
@@ -1751,6 +1806,9 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         return borrowFresh(msg.sender, borrowAmount);
     }
 
+    /**
+     * 结构体：借贷的本地变量
+     */
     struct BorrowLocalVars {
         Error err;
         MathError mathErr;
@@ -1760,7 +1818,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-      * @notice Users borrow assets from the protocol to their own address 借贷底层资产
+      * 借贷底层资产
+      * @notice Users borrow assets from the protocol to their own address 
       * @param borrowAmount The amount of the underlying asset to borrow 需要借的底层资产数量
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
@@ -1788,7 +1847,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
 
         /*
          * We calculate the new borrower and total borrow balances, failing on overflow:
-         *  accountBorrowsNew = accountBorrows + borrowAmount 最新的总接待数量
+         *  accountBorrowsNew = accountBorrows + borrowAmount 最新的总借贷数量
          *  totalBorrowsNew = totalBorrows + borrowAmount
          */
         (vars.mathErr, vars.accountBorrows) = borrowBalanceStoredInternal(borrower);
@@ -1811,7 +1870,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         // (No safe failures beyond this point)
 
         /*
-         * We invoke doTransferOut for the borrower and the borrowAmount. 借出资产 
+         * 借出资产的转账操作
+         * We invoke doTransferOut for the borrower and the borrowAmount.  
          *  Note: The cToken must handle variations between ERC-20 and ETH underlying.
          *  On success, the cToken borrowAmount less of cash.
          *  If doTransferOut fails despite the fact we checked pre-conditions,
@@ -1837,7 +1897,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Sender repays their own borrow 归还借贷
+     * 归还借贷
+     * @notice Sender repays their own borrow 
      * @param repayAmount The amount to repay 归还数量
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
@@ -1853,7 +1914,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Sender repays a borrow belonging to borrower 归还借贷
+     * 归还借贷
+     * @notice Sender repays a borrow belonging to borrower 
      * @param borrower the account with the debt being payed off 借贷者地址
      * @param repayAmount The amount to repay 归还数量
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -1869,6 +1931,9 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         return repayBorrowFresh(msg.sender, borrower, repayAmount);
     }
 
+    /**
+     * 结构体：归还借贷的本地变量
+     */
     struct RepayBorrowLocalVars {
         Error err;
         MathError mathErr;
@@ -1880,7 +1945,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Borrows are repaid by another user (possibly the borrower). 归还借贷
+     * 归还借贷
+     * @notice Borrows are repaid by another user (possibly the borrower). 
      * @param payer the account paying off the borrow 付款地址
      * @param borrower the account with the debt being payed off 借款地址
      * @param repayAmount the amount of undelrying tokens being returned 归还数量
@@ -1944,7 +2010,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         // (No safe failures beyond this point)
 
         /*
-         * We call doTransferIn for the payer and the repayAmount 归还转账操作
+         * 归还借贷的转账操作
+         * We call doTransferIn for the payer and the repayAmount 
          *  Note: The cToken must handle variations between ERC-20 and ETH underlying.
          *  On success, the cToken holds an additional repayAmount of cash.
          *  If doTransferIn fails despite the fact we checked pre-conditions,
@@ -1970,7 +2037,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice The sender liquidates the borrowers collateral. 清算借贷者的抵押品
+     * 清算借贷者的抵押品
+     * @notice The sender liquidates the borrowers collateral. 
      *  The collateral seized is transferred to the liquidator. 没收抵押品转给清算者
      * @param borrower The borrower of this cToken to be liquidated 借贷者地址
      * @param cTokenCollateral The market in which to seize collateral from the borrower 罚没的CToken数量
@@ -1996,7 +2064,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice The liquidator liquidates the borrowers collateral. 清算借贷者的抵押品
+     * 清算借贷者的抵押品
+     * @notice The liquidator liquidates the borrowers collateral. 
      *  The collateral seized is transferred to the liquidator. 没收抵押品转给清算者
      * @param borrower The borrower of this cToken to be liquidated 借贷者地址
      * @param liquidator The address repaying the borrow and seizing collateral 清算者地址
@@ -2077,7 +2146,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Transfers collateral tokens (this market) to the liquidator. 把要清算的抵押品转账给清算者
+     * 把要清算的抵押品转账给清算者
+     * @notice Transfers collateral tokens (this market) to the liquidator. 
      * @dev Will fail unless called by another cToken during the process of liquidation.
      *  Its absolutely critical to use msg.sender as the borrowed cToken and not a parameter.
      * @param liquidator The account receiving seized collateral 清算者地址
@@ -2143,6 +2213,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     //管理类方法
 
     /**
+      * 转移管理员权限
       * @notice Begins transfer of admin rights. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
       * @dev Admin function to begin change of admin. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
       * @param newPendingAdmin New pending admin.
@@ -2169,6 +2240,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
+      * 准许转移管理权限
       * @notice Accepts transfer of admin rights. msg.sender must be pendingAdmin
       * @dev Admin function for pending admin to accept role and update admin
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -2196,7 +2268,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-      * @notice Sets a new comptroller for the market 设置新的风险管理者
+      * 设置新的审计官
+      * @notice Sets a new comptroller for the market 
       * @dev Admin function to set a new comptroller
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
@@ -2220,7 +2293,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-      * @notice accrues interest and sets a new reserve factor for the protocol using _setReserveFactorFresh 设置储备金比例
+      * 设置储备金比例
+      * @notice accrues interest and sets a new reserve factor for the protocol using _setReserveFactorFresh 
       * @dev Admin function to accrue interest and set a new reserve factor
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
@@ -2235,7 +2309,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-      * @notice Sets a new reserve factor for the protocol (*requires fresh interest accrual) 设置储备金比例
+      * 设置储备金比例
+      * @notice Sets a new reserve factor for the protocol (*requires fresh interest accrual) 
       * @dev Admin function to set a new reserve factor
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
@@ -2268,7 +2343,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Accrues interest and reduces reserves by transferring to admin 减少储备金
+     * 减少储备金
+     * @notice Accrues interest and reduces reserves by transferring to admin 
      * @param reduceAmount Amount of reduction to reserves
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
@@ -2283,7 +2359,8 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
-     * @notice Reduces reserves by transferring to admin 减少储备金
+     * 减少储备金
+     * @notice Reduces reserves by transferring to admin 
      * @dev Requires fresh interest accrual
      * @param reduceAmount Amount of reduction to reserves
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -2338,6 +2415,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
+     * 计算利息并更新利率模型
      * @notice accrues interest and updates the interest rate model using _setInterestRateModelFresh
      * @dev Admin function to accrue interest and update the interest rate model
      * @param newInterestRateModel the new interest rate model to use
@@ -2354,6 +2432,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     }
 
     /**
+     * 更新利率模型
      * @notice updates the interest rate model (*requires fresh interest accrual)
      * @dev Admin function to update the interest rate model
      * @param newInterestRateModel the new interest rate model to use
@@ -2365,6 +2444,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         InterestRateModel oldInterestRateModel;
 
         // Check caller is admin
+        //必须为管理员调用
         if (msg.sender != admin) {
             return fail(Error.UNAUTHORIZED, FailureInfo.SET_INTEREST_RATE_MODEL_OWNER_CHECK);
         }
@@ -2382,17 +2462,20 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
         require(newInterestRateModel.isInterestRateModel(), "marker method returned false");
 
         // Set the interest rate model to newInterestRateModel
+        //设置新的利率模型
         interestRateModel = newInterestRateModel;
 
-        // Emit NewMarketInterestRateModel(oldInterestRateModel, newInterestRateModel)
+        // Emit NewMarketInterestRateModel(oldInterestRateModel, newInterestRateModel) 触发更新利率模型的事件
         emit NewMarketInterestRateModel(oldInterestRateModel, newInterestRateModel);
 
         return uint(Error.NO_ERROR);
     }
 
     /*** Safe Token ***/
+    //关于Token安全方法
 
     /**
+     * 获取本合约的底层资产数量
      * @notice Gets balance of this contract in terms of the underlying
      * @dev This excludes the value of the current message, if any
      * @return The quantity of underlying owned by this contract
@@ -2400,12 +2483,14 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     function getCashPrior() internal view returns (uint);
 
     /**
+     * 检查是否有足够数量进行转账
      * @dev Checks whether or not there is sufficient allowance for this contract to move amount from `from` and
      *      whether or not `from` has a balance of at least `amount`. Does NOT do a transfer.
      */
     function checkTransferIn(address from, uint amount) internal view returns (Error);
 
     /**
+     * 转入操作
      * @dev Performs a transfer in, ideally returning an explanatory error code upon failure rather than reverting.
      *  If caller has not called `checkTransferIn`, this may revert due to insufficient balance or insufficient allowance.
      *  If caller has called `checkTransferIn` successfully, this should not revert in normal conditions.
@@ -2413,6 +2498,7 @@ contract CToken is EIP20Interface, Exponential, TokenErrorReporter, ReentrancyGu
     function doTransferIn(address from, uint amount) internal returns (Error);
 
     /**
+     * 转出操作
      * @dev Performs a transfer out, ideally returning an explanatory error code upon failure tather than reverting.
      *  If caller has not called checked protocol's balance, may revert due to insufficient cash held in the contract.
      *  If caller has checked protocol's balance, and verified it is >= amount, this should not revert in normal conditions.
@@ -2426,6 +2512,7 @@ pragma solidity ^0.5.8;
 
 
 /**
+ * CERC20合约，继承CToken合约
  * @title Compound's CErc20 Contract
  * @notice CTokens which wrap an EIP-20 underlying
  * @author Compound
@@ -2438,13 +2525,14 @@ contract CErc20 is CToken {
     address public underlying;
 
     /**
-     * @notice Construct a new money market 构造函数
+     * 构造函数，创建一个新的借贷市场
+     * @notice Construct a new money market 
      * @param underlying_ The address of the underlying asset 底层资产地址
      * @param comptroller_ The address of the Comptroller 
      * @param interestRateModel_ The address of the interest rate model 利率模型的合约地址
      * @param initialExchangeRateMantissa_ The initial exchange rate, scaled by 1e18 初始化兑换比例
-     * @param name_ ERC-20 name of this token 代币name
-     * @param symbol_ ERC-20 symbol of this token 代币symbol
+     * @param name_ ERC-20 name of this token 代币名
+     * @param symbol_ ERC-20 symbol of this token 代币简称
      * @param decimals_ ERC-20 decimal precision of this token 代币精度
      */
     constructor(address underlying_,
@@ -2463,7 +2551,8 @@ contract CErc20 is CToken {
     /*** User Interface ***/
 
     /**
-     * @notice Sender supplies assets into the market and receives cTokens in exchange 存入底层资产以铸造CToken
+     * 存入底层资产以铸造CToken
+     * @notice Sender supplies assets into the market and receives cTokens in exchange 
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param mintAmount The amount of the underlying asset to supply
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -2473,7 +2562,8 @@ contract CErc20 is CToken {
     }
 
     /**
-     * @notice Sender redeems cTokens in exchange for the underlying asset 输入要销毁的CToken数量，销毁CToken以赎回底层资产
+     * 输入要销毁的CToken数量，销毁CToken以赎回底层资产
+     * @notice Sender redeems cTokens in exchange for the underlying asset 
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param redeemTokens The number of cTokens to redeem into underlying
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -2483,7 +2573,8 @@ contract CErc20 is CToken {
     }
 
     /**
-     * @notice Sender redeems cTokens in exchange for a specified amount of underlying asset 输入要赎回的底层资产数量，销毁CToken以赎回底层资产
+     * 输入要赎回的底层资产数量，销毁CToken以赎回底层资产
+     * @notice Sender redeems cTokens in exchange for a specified amount of underlying asset 
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param redeemAmount The amount of underlying to redeem
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -2493,7 +2584,8 @@ contract CErc20 is CToken {
     }
 
     /**
-      * @notice Sender borrows assets from the protocol to their own address 借贷底层资产
+      * 借贷底层资产
+      * @notice Sender borrows assets from the protocol to their own address 
       * @param borrowAmount The amount of the underlying asset to borrow
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
@@ -2502,7 +2594,8 @@ contract CErc20 is CToken {
     }
 
     /**
-     * @notice Sender repays their own borrow 归还借贷的底层资产
+     * 归还借贷的底层资产
+     * @notice Sender repays their own borrow 
      * @param repayAmount The amount to repay
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
@@ -2511,7 +2604,8 @@ contract CErc20 is CToken {
     }
 
     /**
-     * @notice Sender repays a borrow belonging to borrower 归还借贷的底层资产
+     * 某个借贷者归还借贷的底层资产
+     * @notice Sender repays a borrow belonging to borrower 
      * @param borrower the account with the debt being payed off
      * @param repayAmount The amount to repay
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
@@ -2521,7 +2615,8 @@ contract CErc20 is CToken {
     }
 
     /**
-     * @notice The sender liquidates the borrowers collateral. 清算借贷者的抵押品
+     * 清算借贷者的抵押品
+     * @notice The sender liquidates the borrowers collateral. 
      *  The collateral seized is transferred to the liquidator.
      * @param borrower The borrower of this cToken to be liquidated
      * @param cTokenCollateral The market in which to seize collateral from the borrower
@@ -2533,9 +2628,11 @@ contract CErc20 is CToken {
     }
 
     /*** Safe Token ***/
+    //代币安全方法
 
     /**
-     * @notice Gets balance of this contract in terms of the underlying 获取本合约的底层资产余额
+     * 获取本合约的底层资产余额
+     * @notice Gets balance of this contract in terms of the underlying 
      * @dev This excludes the value of the current message, if any
      * @return The quantity of underlying tokens owned by this contract
      */
@@ -2545,6 +2642,7 @@ contract CErc20 is CToken {
     }
 
     /**
+     * 检查是否有足够数量进行转账
      * @dev Checks whether or not there is sufficient allowance for this contract to move amount from `from` and
      *      whether or not `from` has a balance of at least `amount`. Does NOT do a transfer.
      */
@@ -2563,6 +2661,7 @@ contract CErc20 is CToken {
     }
 
     /**
+     * 转入操作
      * @dev Similar to EIP20 transfer, except it handles a False result from `transferFrom` and returns an explanatory
      *      error code rather than reverting.  If caller has not called `checkTransferIn`, this may revert due to
      *      insufficient balance or insufficient allowance. If caller has called `checkTransferIn` prior to this call,
@@ -2578,6 +2677,7 @@ contract CErc20 is CToken {
         token.transferFrom(from, address(this), amount);
 
         // solium-disable-next-line security/no-inline-assembly
+        // 内联汇编
         assembly {
             switch returndatasize()
                 case 0 {                      // This is a non-standard ERC-20
@@ -2600,6 +2700,7 @@ contract CErc20 is CToken {
     }
 
     /**
+     * 转出操作
      * @dev Similar to EIP20 transfer, except it handles a False result from `transfer` and returns an explanatory
      *      error code rather than reverting. If caller has not called checked protocol's balance, this may revert due to
      *      insufficient cash held in this contract. If caller has checked protocol's balance prior to this call, and verified
@@ -2615,6 +2716,7 @@ contract CErc20 is CToken {
         token.transfer(to, amount);
 
         // solium-disable-next-line security/no-inline-assembly
+        // 内联汇编
         assembly {
             switch returndatasize()
                 case 0 {                      // This is a non-standard ERC-20
